@@ -118,12 +118,12 @@ def publish_mqtt(client, sensor_data, options, topics, file_handle, verbose=Fals
 
     if verbose:
         str_datetime = curr_datetime.strftime("%Y-%m-%d %H:%M:%S")
-        print("{0}: temperature: {1:.1f} F, humidity: {2:.1f} %RH, pressure: {3:.2f} hPa, sealevel: {4:.2f} hPa".
-              format(str_datetime, temp_F, hum, press_A, press_S), file=file_handle)
+        print("{0}: temperature: {1:.1f}ºC, humidity: {2:.1f} %RH, pressure: {3:.2f} hPa, sealevel: {4:.2f} hPa".
+              format(str_datetime, temp_C, hum, press_A, press_S), file=file_handle)
         file_handle.flush()
 
     if options.format == "flat":
-        temperature = str(round(temp_F, 1))
+        temperature = str(round(temp_C, 1))
         humidity = str(round(hum, 1))
         pressure = str(round(press_A, 2))
         pressure_sealevel = str(round(press_S, 2))
@@ -140,7 +140,7 @@ def publish_mqtt(client, sensor_data, options, topics, file_handle, verbose=Fals
 
         data[options.section] = {}
         data[options.section]['Humidity'] = round(hum, 1)
-        data[options.section]['Temperature'] = round(temp_F, 1)
+        data[options.section]['Temperature'] = round(temp_C, 1)
         data[options.section]['Pressure'] = round(press_A, 2)
         if options.elevation > SEALEVEL_MIN:
             data[options.section]['Sealevel'] = round(press_S, 2)
@@ -190,7 +190,7 @@ def start_bme280_sensor(args):
         file_handle = sys.stdout
 
     mqtt.Client.connected_flag=False
-    client = mqtt.Client(args.clientid)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, args.clientid)
 
     mqtt_conf = configparser.ConfigParser()
     mqtt_conf.read(args.config)
