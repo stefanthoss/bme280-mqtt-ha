@@ -1,7 +1,6 @@
-[![Build Status](https://travis-ci.org/Scott8586/bme280-python-mqtt.svg?branch=master)](https://travis-ci.org/Scott8586/bme280-python-mqtt)
+# bme280-mqtt-ha
 
-## bme280-python-mqtt
-Daemon for bme280 sensor reporting through MQTT on the raspberry pi under python3
+Daemon for BME280 sensor reporting through MQTT to Home Assistant
 
 This code uses the [Pimoroni bme280-python](https://github.com/pimoroni/bme280-python) code to scan the BME280 sensor attached to a raspberry pi and report the results over MQTT.
 
@@ -13,38 +12,21 @@ I am currently running this code on a raspberry pi zero W.
 
 A systemd service file is also included and is part of the install process in the Makefile.
 
-### Requirements
+## Requirements
 
-The following packages are required beyond stock python3.5 to get this running:
+You can install these using:
 
-	argparse
-	configparser
-	python-daemon
-	paho-mqtt
-	smbus2
-	pimoroni-bme280
-
-You can install these using pip3 like so:
-
-```
-	sudo pip3 install -r requirements.txt
+```shell
+	sudo poetry install
 ```
 
 Install the requirements in the `root` enviroment, or whichever enviroment make sense for you. Currently I run the daemon as root for easy access to /dev/i2c
 
-### Notes
-
-configparser has recently been upgraded past python3.5, but that's the latest version of python on jesse, so you may have to install it like so:
-
-```
-	sudo pip3 install configparser==4.0.2
-```
-
-### Home Assistant
+## Home Assistant
 
 The following configuration yaml could be used with Home Assistant:
 
-```
+```yaml
 sensor:
  - platform: mqtt
     state_topic: 'environment/den/BME280_temperature'
@@ -66,7 +48,7 @@ sensor:
 
 And for lovelace display:
 
-```
+```yaml
 cards:
   - entities:
       - entity: sensor.den_temperature
@@ -76,5 +58,3 @@ cards:
     title: Den BME280
     type: entities
 ```
-
-
