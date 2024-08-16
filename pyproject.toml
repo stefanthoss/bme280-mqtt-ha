@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "bme280-mqtt-ha"
+version = "0.1.0"
+description = "Daemon for BME280 sensor reporting through MQTT to Home Assistant"
+authors = ["Scott Presnell"]
+maintainers = ["Stefan Thoss"]
+license = "MIT License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+argparse = "^1.4.0"
+configparser = "^4.0.2"
+python-daemon = "^3.0.1"
+paho-mqtt = "^2.1.0"
+smbus2 = "^0.4.3"
+pimoroni-bme280 = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pylint = "^3.2.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
