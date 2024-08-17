@@ -257,7 +257,7 @@ def start_bme280_sensor(args):
     port = int(mqtt_conf.get(args.section, "port"))
 
     client.on_connect = on_connect
-    #    client.on_disconnect = on_disconnect
+    # client.on_disconnect = on_disconnect
     client.loop_start()
     client.connect(host, port, 60)
     # client.loop_start()
