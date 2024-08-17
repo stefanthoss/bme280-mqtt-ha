@@ -133,8 +133,8 @@ def publish_mqtt(
     hum = sensor_data.humidity + options.hoffset
 
     temp_C = sensor_data.temperature + options.toffset
-    temp_F = 9.0 / 5.0 * temp_C + 32
-    temp_K = temp_C + 273.15
+    # temp_F = 9.0 / 5.0 * temp_C + 32
+    # temp_K = temp_C + 273.15
 
     press_A = sensor_data.pressure + options.poffset
 
@@ -332,8 +332,8 @@ def start_bme280_sensor(args):
                     args.verbose,
                 )
             first_read = False
-            done_time = time.time()
-        #            print("difference = {0}".format(done_time - curr_time))
+            # done_time = time.time()
+            # print("difference = {0}".format(done_time - curr_time))
 
         time.sleep(SLEEP_TIME)
 
