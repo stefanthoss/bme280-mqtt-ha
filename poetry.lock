@@ -253,6 +253,20 @@ qa = ["flake8"]
 test = ["mock", "nose"]
 
 [[package]]
+name = "smbus3"
+version = "0.5.5"
+description = "smbus3 is a drop-in replacement for smbus2, smbus-cffi, smbus-python written in pure Python, intended for use with Python 3.8+ on Unix-like systems"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "smbus3-0.5.5-py3-none-any.whl", hash = "sha256:7f4cc169975543e67e4b7404168ce918e656f6f8daca5de2bd30527298058083"},
+    {file = "smbus3-0.5.5.tar.gz", hash = "sha256:91eed38fb6b7d2f893fbfc3f37006aa41e6913fdda5b3a9a79238b353760f92e"},
+]
+
+[package.extras]
+docs = ["sphinx (>=7.0.0)"]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -288,4 +302,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "87ad561cc117f96140ed297ed8f6f82d779554ca086865bc35d00bbf8856b49b"
+content-hash = "db0b2abb52a6bfcb8643690362889ec63833d56991600b01300b7fdb0320d4e0"
