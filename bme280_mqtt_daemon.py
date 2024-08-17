@@ -33,11 +33,15 @@ import bme280
 MQTT_INI = "/etc/mqtt.ini"
 MQTT_SEC = "BME280"
 
+MY_HOST = platform.node()
+
 SEALEVEL_MIN = -999
 
 SLEEP_TIME = 1 # in seconds
 SENSOR_STANDBY = 1000
-status_topic = ""
+availability_topic = ""
+config_topics = None
+state_topic = ""
 read_loop = True
 
 class Options(object):
@@ -49,7 +53,6 @@ class Options(object):
         self.poffset = 0
         self.root_topic = ""
         self.elevation = SEALEVEL_MIN
-        self.format = "flat"
         self.mode = "normal"
 
 class Topics(object):
@@ -57,10 +60,10 @@ class Topics(object):
     """
 
     def __init__(self, root_topic, section):
-        self.temperature = root_topic + '/' + section + '_temperature'
-        self.humidity = root_topic + '/' + section + '_humidity'
-        self.pressure = root_topic + '/' + section + '_pressure'
-        self.sealevel_pressure = root_topic + '/' + section + '_sealevel_pressure'
+        self.temperature = root_topic + '/sensor/' + MY_HOST + '/' + section + '_temperature/config'
+        self.humidity = root_topic + '/sensor/' + MY_HOST + '/' + section + '_humidity/config'
+        self.pressure = root_topic + '/sensor/' + MY_HOST + '/' + section + '_pressure/config'
+        self.sealevel_pressure = root_topic + '/sensor/' + MY_HOST + '/' + section + '_sealevel/config'
 
 class SensorData(object):
     """Sensor Data Object
@@ -90,11 +93,39 @@ def on_connect(client, userdata, flags, return_code):
         print("Connected with result code: ", str(return_code))
     else:
         client.connected_flag=True
-        client.publish(status_topic, "Online", retain=True)
+
+        sensor_configs = [["Temperature", "°C", "temperature", config_topics.temperature],
+                       ["Humidity", "%", "humidity", config_topics.humidity],
+                       ["Pressure", "hPa", "pressure", config_topics.pressure]]
+
+        if userdata.elevation > SEALEVEL_MIN:
+            sensor_configs.append(["Sealevel", "hPa", "pressure", config_topics.sealevel_pressure])
+
+        for sensor in sensor_configs:
+            # Configure sensor
+            ha_sensor_config = {
+                "availability_topic": availability_topic,
+                "device_class": sensor[2],
+                "device": {
+                    "identifiers": MY_HOST,
+                    "name": f"{MY_HOST} Sensor"
+                },
+                "enabled_by_default": True,
+                "name": sensor[0],
+                "state_class": "measurement",
+                "state_topic": state_topic,
+                "unique_id": f"{MY_HOST}_{sensor[0]}".lower(),
+                "unit_of_measurement": sensor[1],
+                "value_template": f"{{{{ value_json.{userdata.section}_{sensor[0].lower()} }}}}"
+            }
+            client.publish(sensor[3], json.dumps(ha_sensor_config), retain=True)
+
+            # Mark sensor as online
+            client.publish(availability_topic, "online", retain=True)
 
     
-def publish_mqtt(client, sensor_data, options, topics, file_handle, verbose=False):
-    """Publish the sensor data to mqtt, in either flat, or JSON format
+def publish_mqtt(client, sensor_data, options, config_topics, file_handle, verbose=False):
+    """Publish the sensor data to MQTT in JSON format
     """
 
     hum = sensor_data.humidity + options.hoffset
@@ -122,34 +153,17 @@ def publish_mqtt(client, sensor_data, options, topics, file_handle, verbose=Fals
               format(str_datetime, temp_C, hum, press_A, press_S), file=file_handle)
         file_handle.flush()
 
-    if options.format == "flat":
-        temperature = str(round(temp_C, 1))
-        humidity = str(round(hum, 1))
-        pressure = str(round(press_A, 2))
-        pressure_sealevel = str(round(press_S, 2))
+    data = {}
 
-        client.publish(topics.temperature, temperature)
-        client.publish(topics.humidity, humidity)
-        client.publish(topics.pressure, pressure)
+    data[f'{options.section}_humidity'] = round(hum, 1)
+    data[f'{options.section}_temperature'] = round(temp_C, 1)
+    data[f'{options.section}_pressure'] = round(press_A, 2)
+    if options.elevation > SEALEVEL_MIN:
+        data[f'{options.section}_sealevel'] = round(press_S, 2)
 
-        if options.elevation > SEALEVEL_MIN:
-            client.publish(topics.sealevel_pressure, pressure_sealevel)
+    # data['Time'] = curr_datetime.replace(microsecond=0).isoformat()
 
-    else:
-        data = {}
-
-        data[options.section] = {}
-        data[options.section]['Humidity'] = round(hum, 1)
-        data[options.section]['Temperature'] = round(temp_C, 1)
-        data[options.section]['Pressure'] = round(press_A, 2)
-        if options.elevation > SEALEVEL_MIN:
-            data[options.section]['Sealevel'] = round(press_S, 2)
-
-        data['TempUnit'] = 'F'
-        data['Time'] = curr_datetime.replace(microsecond=0).isoformat()
-
-        #json_data = json.dumps(data)
-        client.publish(options.root_topic + '/SENSOR', json.dumps(data))
+    client.publish(state_topic, json.dumps(data))
 
     return
 
@@ -178,7 +192,7 @@ def start_bme280_sensor(args):
     """Main program function, parse arguments, read configuration,
     setup client, listen for messages"""
 
-    global status_topic, read_loop
+    global availability_topic, config_topics, state_topic, read_loop
 
     i2c_address = bme280.I2C_ADDRESS_GND # 0x76, alt is 0x77
 
@@ -190,7 +204,7 @@ def start_bme280_sensor(args):
         file_handle = sys.stdout
 
     mqtt.Client.connected_flag=False
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, args.clientid)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, args.clientid, userdata=options)
 
     mqtt_conf = configparser.ConfigParser()
     mqtt_conf.read(args.config)
@@ -199,8 +213,9 @@ def start_bme280_sensor(args):
 
     options.root_topic = mqtt_conf.get(args.section, 'topic')
 
-    topics = Topics(options.root_topic, args.section)
-    status_topic = options.root_topic + '/' + "LWT"
+    availability_topic = f"{options.root_topic}/sensor/{MY_HOST}/status"
+    config_topics = Topics(options.root_topic, args.section)
+    state_topic = f"{options.root_topic}/sensor/{MY_HOST}/state"
 
     if mqtt_conf.has_option(args.section, 'address'):
         i2c_address = int(mqtt_conf.get(args.section, 'address'), 0)
@@ -281,7 +296,7 @@ def start_bme280_sensor(args):
 
         if my_time % 60 == 0:
             if not first_read:
-                publish_mqtt(client, sensor_data, options, topics, file_handle, args.verbose)
+                publish_mqtt(client, sensor_data, options, config_topics, file_handle, args.verbose)
             first_read = False
             done_time = time.time()
 #            print("difference = {0}".format(done_time - curr_time))
@@ -291,7 +306,7 @@ def start_bme280_sensor(args):
     curr_datetime = datetime.datetime.now()
     str_datetime = curr_datetime.strftime("%Y-%m-%d %H:%M:%S")
     print("{0}: pid: {1:d}, bme280 sensor interrupted".format(str_datetime, os.getpid()), file=file_handle)
-    client.publish(status_topic, "Offline", retain=True)
+    client.publish(availability_topic, "offline", retain=True)
     
     client.loop_stop()
     client.disconnect()
@@ -301,10 +316,8 @@ def main():
     """Main function call
     """
 
-    #myhost = socket.gethostname().split('.', 1)[0]
-    my_host = platform.node()
     my_pid = os.getpid()
-    client_id = my_host + '-' + str(my_pid)
+    client_id = MY_HOST + '-' + str(my_pid)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-c', '--config', default=MQTT_INI, help="configuration file")

@@ -17,7 +17,7 @@ A systemd service file is also included and is part of the install process in th
 You can install these using:
 
 ```shell
-	sudo poetry install
+sudo poetry install
 ```
 
 Install the requirements in the `root` enviroment, or whichever enviroment make sense for you. Currently I run the daemon as root for easy access to /dev/i2c
