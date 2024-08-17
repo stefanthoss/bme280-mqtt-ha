@@ -17,44 +17,11 @@ A systemd service file is also included and is part of the install process in th
 You can install these using:
 
 ```shell
-	sudo poetry install
+sudo poetry install
 ```
 
 Install the requirements in the `root` enviroment, or whichever enviroment make sense for you. Currently I run the daemon as root for easy access to /dev/i2c
 
 ## Home Assistant
 
-The following configuration yaml could be used with Home Assistant:
-
-```yaml
-sensor:
- - platform: mqtt
-    state_topic: 'environment/den/BME280_temperature'
-    unit_of_measurement: '°F'
-    name: 'Den Temperature'
-  - platform: mqtt
-    state_topic: 'environment/den/BME280_humidity'
-    unit_of_measurement: '% RH'
-    name: 'Den Humidity'    
-  - platform: mqtt
-    state_topic: 'environment/den/BME280_pressure'
-    unit_of_measurement: 'hPa'
-    name: 'Den Pressure'
-  - platform: mqtt
-    state_topic: 'environment/den/BME280_sealevel_pressure'
-    unit_of_measurement: 'hPa'
-    name: 'Den Sealevel Pressure'
-```
-
-And for lovelace display:
-
-```yaml
-cards:
-  - entities:
-      - entity: sensor.den_temperature
-      - entity: sensor.den_humidity
-      - entity: sensor.den_pressure
-      - entity: sensor.den_sealevel_pressure
-    title: Den BME280
-    type: entities
-```
+When the MQTT integration is added to Home Assistant, the sensors will be added automatically through [MQTT Discovery](https://www.home-assistant.io/integrations/mqtt#mqtt-discovery). The prefix for the discovery topic (default `homeassistant`, see this repo's config file) can be changed.
