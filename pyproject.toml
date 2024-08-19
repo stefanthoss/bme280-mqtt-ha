@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bme280-mqtt-ha"
-version = "0.1.0"
+version = "1.0.0"
 description = "Daemon for BME280 sensor reporting through MQTT to Home Assistant"
 authors = ["Scott Presnell"]
 maintainers = ["Stefan Thoss"]
